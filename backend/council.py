@@ -1,33 +1,131 @@
 """3-stage LLM Council orchestration."""
 
-from typing import List, Dict, Any, Tuple
+import logging
+from typing import List, Dict, Any, Tuple, Optional
 from .openrouter import query_models_parallel, query_model
-from .config import COUNCIL_MODELS, CHAIRMAN_MODEL
+from .config import COUNCIL_MODELS, CHAIRMAN_MODEL, MODEL_PROVIDERS, MODEL_PRICING
+from .resilience import ResilientCouncil, PartialResponseHandler
+from .cache import ResponseCache, QueryCache
+from .cost_tracker import CostTracker, SmartModelSelector
+from .agent_roles import CouncilComposer, RoleAssigner
+
+logger = logging.getLogger(__name__)
+
+# Initialize shared instances
+resilient_council = ResilientCouncil(min_responses_required=3)
+cache = ResponseCache()
+query_cache = QueryCache(cache)
+cost_tracker = CostTracker()
+council_composer = CouncilComposer()
 
 
-async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
+async def stage1_collect_responses(
+    user_query: str,
+    use_smart_selection: bool = True,
+    council_config: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """
-    Stage 1: Collect individual responses from all council models.
+    Stage 1: Collect individual responses from all council models with resilience and caching.
 
     Args:
         user_query: The user's question
+        use_smart_selection: Whether to use smart model selection based on complexity
 
     Returns:
         List of dicts with 'model' and 'response' keys
     """
     messages = [{"role": "user", "content": user_query}]
 
-    # Query all models in parallel
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    # Smart model selection based on query complexity and budget
+    if use_smart_selection:
+        remaining_budget = cost_tracker.get_remaining_budget()
+        selected_models = SmartModelSelector.select_models(
+            user_query,
+            remaining_budget
+        )
+    else:
+        selected_models = COUNCIL_MODELS
 
-    # Format results
+    # Check budget before proceeding
+    estimated_cost = cost_tracker.estimate_cost(selected_models)
+    if not cost_tracker.can_proceed(estimated_cost):
+        logger.error(f"Budget exceeded. Estimated cost: ${estimated_cost:.4f}")
+        raise ValueError(f"Budget limit exceeded. Remaining: ${cost_tracker.get_remaining_budget():.2f}")
+
+    # Try to get cached responses first
+    cached_responses = {}
+    uncached_models = []
+
+    for model in selected_models:
+        cached = await cache.get(model, messages)
+        if cached:
+            cached_responses[model] = cached
+            logger.info(f"Cache hit for {model}")
+        else:
+            uncached_models.append(model)
+
+    # Query uncached models with resilience
+    fresh_responses = {}
+    if uncached_models:
+        logger.info(f"Querying {len(uncached_models)} uncached models")
+        fresh_responses = await resilient_council.execute_with_fallback(
+            uncached_models,
+            messages
+        )
+
+        # Cache fresh responses and track costs
+        for model, response in fresh_responses.items():
+            if response:
+                await cache.set(model, messages, response)
+                # Track cost with detailed token breakdown
+                usage = response.get('usage', {})
+                cost_tracker.track_usage(
+                    model,
+                    tokens=usage.get('total_tokens', 1000),
+                    input_tokens=usage.get('prompt_tokens', 0),
+                    output_tokens=usage.get('completion_tokens', 0)
+                )
+
+    # Combine all responses
+    all_responses = {**cached_responses, **fresh_responses}
+
+    # Helper to get provider info
+    def get_provider_info(model_id: str) -> Dict[str, str]:
+        provider_key = model_id.split('/')[0] if '/' in model_id else 'unknown'
+        return MODEL_PROVIDERS.get(provider_key, {"name": provider_key.title(), "color": "#888888"})
+
+    # Helper to calculate cost for a response
+    def calc_cost(model_id: str, usage: Dict) -> float:
+        if model_id in MODEL_PRICING:
+            pricing = MODEL_PRICING[model_id]
+            input_cost = (usage.get('prompt_tokens', 0) / 1_000_000) * pricing['input']
+            output_cost = (usage.get('completion_tokens', 0) / 1_000_000) * pricing['output']
+            return round(input_cost + output_cost, 6)
+        return 0.0
+
+    # Format results with cost/token info
     stage1_results = []
-    for model, response in responses.items():
-        if response is not None:  # Only include successful responses
+    for model, response in all_responses.items():
+        if response is not None and resilient_council.validate_response(response):
+            usage = response.get('usage', {})
             stage1_results.append({
                 "model": model,
-                "response": response.get('content', '')
+                "response": response.get('content', ''),
+                "provider": get_provider_info(model),
+                "tokens": {
+                    "input": usage.get('prompt_tokens', 0),
+                    "output": usage.get('completion_tokens', 0),
+                    "total": usage.get('total_tokens', 0)
+                },
+                "cost": calc_cost(model, usage)
             })
+
+    # Check if we have enough responses
+    if not PartialResponseHandler.can_proceed_with_partial(
+        {m: r for m, r in zip([r["model"] for r in stage1_results], stage1_results)},
+        min_required=resilient_council.min_responses_required
+    ):
+        logger.warning(f"Only got {len(stage1_results)} valid responses")
 
     return stage1_results
 
@@ -274,8 +372,8 @@ Title:"""
 
     messages = [{"role": "user", "content": title_prompt}]
 
-    # Use gemini-2.5-flash for title generation (fast and cheap)
-    response = await query_model("google/gemini-2.5-flash", messages, timeout=30.0)
+    # Use gemini-1.5-flash for title generation (fast and cheap)
+    response = await query_model("google/gemini-1.5-flash", messages, timeout=30.0)
 
     if response is None:
         # Fallback to a generic title
@@ -293,43 +391,113 @@ Title:"""
     return title
 
 
-async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
+async def run_full_council(
+    user_query: str,
+    use_cache: bool = True,
+    council_config: Optional[Dict[str, Any]] = None
+) -> Tuple[List, List, Dict, Dict]:
     """
-    Run the complete 3-stage council process.
+    Run the complete 3-stage council process with caching and resilience.
 
     Args:
         user_query: The user's question
+        use_cache: Whether to use cached results if available
 
     Returns:
         Tuple of (stage1_results, stage2_results, stage3_result, metadata)
     """
-    # Stage 1: Collect individual responses
-    stage1_results = await stage1_collect_responses(user_query)
+    # Check for cached complete result
+    if use_cache:
+        cached_result = await query_cache.get_cached_council_result(user_query)
+        if cached_result:
+            logger.info("Using cached council result")
+            # Add cache hit to metadata
+            cached_result["metadata"]["cache_hit"] = True
+            cached_result["metadata"]["cost"] = 0.0
+            return (
+                cached_result["stage1"],
+                cached_result["stage2"],
+                cached_result["stage3"],
+                cached_result["metadata"]
+            )
 
-    # If no models responded successfully, return error
-    if not stage1_results:
+    # Track initial budget state
+    initial_spend = cost_tracker.current_spend
+
+    try:
+        # Stage 1: Collect individual responses with resilience
+        stage1_results = await stage1_collect_responses(
+            user_query,
+            council_config=council_config
+        )
+
+        # If no models responded successfully, return error
+        if not stage1_results:
+            return [], [], {
+                "model": "error",
+                "response": "All models failed to respond. Fallback models were also unavailable. Please try again."
+            }, {"error": "no_responses", "cost": 0.0}
+
+        # Adjust for partial responses if needed
+        stage1_results = PartialResponseHandler.adjust_stage2_for_partial(stage1_results)
+
+        if not stage1_results:
+            return stage1_results, [], {
+                "model": "error",
+                "response": "Insufficient responses for ranking. Only one model responded."
+            }, {"error": "insufficient_responses", "cost": cost_tracker.current_spend - initial_spend}
+
+        # Stage 2: Collect rankings
+        stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
+
+        # Calculate aggregate rankings
+        aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
+
+        # Stage 3: Synthesize final answer
+        stage3_result = await stage3_synthesize_final(
+            user_query,
+            stage1_results,
+            stage2_results
+        )
+
+        # Calculate total cost
+        total_cost = cost_tracker.current_spend - initial_spend
+
+        # Prepare metadata
+        metadata = {
+            "label_to_model": label_to_model,
+            "aggregate_rankings": aggregate_rankings,
+            "cost": round(total_cost, 4),
+            "cache_hit": False,
+            "models_used": len(stage1_results),
+            "budget_remaining": cost_tracker.get_remaining_budget(),
+            "cache_stats": cache.get_stats()
+        }
+
+        # Cache the complete result
+        if use_cache:
+            await query_cache.cache_council_result(
+                user_query,
+                stage1_results,
+                stage2_results,
+                stage3_result,
+                metadata
+            )
+
+        return stage1_results, stage2_results, stage3_result, metadata
+
+    except ValueError as e:
+        # Budget exceeded or other value errors
+        logger.error(f"Council error: {e}")
         return [], [], {
             "model": "error",
-            "response": "All models failed to respond. Please try again."
-        }, {}
+            "response": str(e)
+        }, {"error": "budget_exceeded", "cost": cost_tracker.current_spend - initial_spend}
 
-    # Stage 2: Collect rankings
-    stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
-
-    # Calculate aggregate rankings
-    aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
-
-    # Stage 3: Synthesize final answer
-    stage3_result = await stage3_synthesize_final(
-        user_query,
-        stage1_results,
-        stage2_results
-    )
-
-    # Prepare metadata
-    metadata = {
-        "label_to_model": label_to_model,
-        "aggregate_rankings": aggregate_rankings
-    }
-
-    return stage1_results, stage2_results, stage3_result, metadata
+    except Exception as e:
+        # Unexpected errors
+        logger.error(f"Unexpected council error: {e}")
+        return [], [], {
+            "model": "error",
+            "response": f"An unexpected error occurred: {str(e)}"
+        }, {"error": "unexpected", "cost": cost_tracker.current_spend - initial_spend}

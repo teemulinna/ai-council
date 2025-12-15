@@ -1,16 +1,21 @@
+/**
+ * ChatInterface - Main chat view with messages and input
+ * Simplified design with tabbed response display
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import Stage1 from './Stage1';
-import Stage2 from './Stage2';
-import Stage3 from './Stage3';
+import ResponseTabs from './ResponseTabs';
 import './ChatInterface.css';
 
 export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
+  defaultCouncil = null,
 }) {
   const [input, setInput] = useState('');
+  const [councilPreset, setCouncilPreset] = useState('balanced');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -24,26 +29,77 @@ export default function ChatInterface({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
-      onSendMessage(input);
+      // Pass council config based on preset
+      onSendMessage(input, defaultCouncil);
       setInput('');
     }
   };
 
   const handleKeyDown = (e) => {
-    // Submit on Enter (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
+  // Welcome screen when no conversation
   if (!conversation) {
     return (
       <div className="chat-interface">
-        <div className="empty-state">
-          <h2>Welcome to LLM Council</h2>
-          <p>Create a new conversation to get started</p>
+        <div className="welcome-state">
+          <div className="welcome-content">
+            <h2>Welcome to LLM Council</h2>
+            <p>
+              Ask a question and get answers from multiple AI models,
+              peer-reviewed and synthesized into a final response.
+            </p>
+            <div className="welcome-features">
+              <div className="feature">
+                <span className="feature-num">1</span>
+                <span>Multiple models respond independently</span>
+              </div>
+              <div className="feature">
+                <span className="feature-num">2</span>
+                <span>Models rank each other anonymously</span>
+              </div>
+              <div className="feature">
+                <span className="feature-num">3</span>
+                <span>Chairman synthesizes the best answer</span>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <form className="input-area" onSubmit={handleSubmit}>
+          <div className="input-row">
+            <textarea
+              className="message-input"
+              placeholder="Ask your question..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={3}
+            />
+          </div>
+          <div className="input-actions">
+            <select
+              className="council-select"
+              value={councilPreset}
+              onChange={(e) => setCouncilPreset(e.target.value)}
+            >
+              <option value="balanced">Balanced (5 models)</option>
+              <option value="fast">Fast (3 models)</option>
+              <option value="deep">Deep (7 models)</option>
+            </select>
+            <button
+              type="submit"
+              className="send-btn btn btn-primary"
+              disabled={!input.trim() || isLoading}
+            >
+              Send
+            </button>
+          </div>
+        </form>
       </div>
     );
   }
@@ -53,14 +109,14 @@ export default function ChatInterface({
       <div className="messages-container">
         {conversation.messages.length === 0 ? (
           <div className="empty-state">
-            <h2>Start a conversation</h2>
-            <p>Ask a question to consult the LLM Council</p>
+            <p>Start a conversation</p>
+            <span>Ask a question to consult the council</span>
           </div>
         ) : (
           conversation.messages.map((msg, index) => (
             <div key={index} className="message-group">
               {msg.role === 'user' ? (
-                <div className="user-message">
+                <div className="message message--user">
                   <div className="message-label">You</div>
                   <div className="message-content">
                     <div className="markdown-content">
@@ -69,77 +125,63 @@ export default function ChatInterface({
                   </div>
                 </div>
               ) : (
-                <div className="assistant-message">
-                  <div className="message-label">LLM Council</div>
-
-                  {/* Stage 1 */}
-                  {msg.loading?.stage1 && (
-                    <div className="stage-loading">
-                      <div className="spinner"></div>
-                      <span>Running Stage 1: Collecting individual responses...</span>
-                    </div>
-                  )}
-                  {msg.stage1 && <Stage1 responses={msg.stage1} />}
-
-                  {/* Stage 2 */}
-                  {msg.loading?.stage2 && (
-                    <div className="stage-loading">
-                      <div className="spinner"></div>
-                      <span>Running Stage 2: Peer rankings...</span>
-                    </div>
-                  )}
-                  {msg.stage2 && (
-                    <Stage2
-                      rankings={msg.stage2}
-                      labelToModel={msg.metadata?.label_to_model}
-                      aggregateRankings={msg.metadata?.aggregate_rankings}
-                    />
-                  )}
-
-                  {/* Stage 3 */}
-                  {msg.loading?.stage3 && (
-                    <div className="stage-loading">
-                      <div className="spinner"></div>
-                      <span>Running Stage 3: Final synthesis...</span>
-                    </div>
-                  )}
-                  {msg.stage3 && <Stage3 finalResponse={msg.stage3} />}
+                <div className="message message--assistant">
+                  <div className="message-label">Council</div>
+                  <ResponseTabs
+                    stage1={msg.stage1}
+                    stage2={msg.stage2}
+                    stage3={msg.stage3}
+                    metadata={msg.metadata}
+                    loading={msg.loading}
+                  />
                 </div>
               )}
             </div>
           ))
         )}
 
-        {isLoading && (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <span>Consulting the council...</span>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {conversation.messages.length === 0 && (
-        <form className="input-form" onSubmit={handleSubmit}>
+      <form className="input-area" onSubmit={handleSubmit}>
+        <div className="input-row">
           <textarea
             className="message-input"
-            placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+            placeholder="Ask your question... (Enter to send, Shift+Enter for new line)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
             rows={3}
           />
+        </div>
+        <div className="input-actions">
+          <select
+            className="council-select"
+            value={councilPreset}
+            onChange={(e) => setCouncilPreset(e.target.value)}
+            disabled={isLoading}
+          >
+            <option value="balanced">Balanced (5 models)</option>
+            <option value="fast">Fast (3 models)</option>
+            <option value="deep">Deep (7 models)</option>
+          </select>
           <button
             type="submit"
-            className="send-button"
+            className="send-btn btn btn-primary"
             disabled={!input.trim() || isLoading}
           >
-            Send
+            {isLoading ? (
+              <>
+                <span className="spinner spinner--small" />
+                Consulting...
+              </>
+            ) : (
+              'Send'
+            )}
           </button>
-        </form>
-      )}
+        </div>
+      </form>
     </div>
   );
 }

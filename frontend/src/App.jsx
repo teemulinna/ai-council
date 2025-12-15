@@ -1,201 +1,333 @@
-import { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import ChatInterface from './components/ChatInterface';
-import { api } from './api';
-import './App.css';
+import { useState, useCallback, useRef } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
 
-function App() {
-  const [conversations, setConversations] = useState([]);
-  const [currentConversationId, setCurrentConversationId] = useState(null);
-  const [currentConversation, setCurrentConversation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+import { useCanvasStore } from './stores/canvasStore';
+import { useExecutionStore } from './stores/executionStore';
+import { useHistoryStore } from './stores/historyStore';
 
-  // Load conversations on mount
-  useEffect(() => {
-    loadConversations();
+import LandingView from './components/LandingView';
+import Header from './components/layout/Header';
+import Sidebar from './components/panels/Sidebar';
+import CouncilCanvas from './components/canvas/CouncilCanvas';
+import ConfigPanel from './components/panels/ConfigPanel';
+import EdgePanel from './components/panels/EdgePanel';
+import ResultsPanel from './components/panels/ResultsPanel';
+import ChatInput from './components/ChatInput';
+import ExecutionLogs from './components/panels/ExecutionLogs';
+import HelpGuide from './components/HelpGuide';
+import HistoryPanel from './components/panels/HistoryPanel';
+
+// Use environment variables for API URLs
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8347/ws/execute';
+
+export default function App() {
+  const [showResults, setShowResults] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logsConversationId, setLogsConversationId] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(false); // Hidden by default
+  const [showHelp, setShowHelp] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const currentConversationId = useRef(null);
+
+  const nodes = useCanvasStore((s) => s.nodes);
+  const loadPreset = useCanvasStore((s) => s.loadPreset);
+  const clearCanvas = useCanvasStore((s) => s.clearCanvas);
+  const exportConfig = useCanvasStore((s) => s.exportConfig);
+
+  const isExecuting = useExecutionStore((s) => s.isExecuting);
+  const startExecution = useExecutionStore((s) => s.startExecution);
+  const setNodeState = useExecutionStore((s) => s.setNodeState);
+  const setResponse = useExecutionStore((s) => s.setResponse);
+  const setRanking = useExecutionStore((s) => s.setRanking);
+  const setFinalAnswer = useExecutionStore((s) => s.setFinalAnswer);
+  const setStage = useExecutionStore((s) => s.setStage);
+  const completeExecution = useExecutionStore((s) => s.completeExecution);
+  const stopExecution = useExecutionStore((s) => s.stopExecution);
+  const appendStreamingContent = useExecutionStore((s) => s.appendStreamingContent);
+
+  const addConversation = useHistoryStore((s) => s.addConversation);
+  const conversations = useHistoryStore((s) => s.conversations);
+  const restoreFromHistory = useExecutionStore((s) => s.restoreFromHistory);
+
+  // Has council been set up?
+  const hasCouncil = nodes.length > 0;
+  const hasHistory = conversations.length > 0;
+
+  // Handle preset selection from LandingView
+  const handleSelectPreset = useCallback((preset) => {
+    loadPreset(preset);
+  }, [loadPreset]);
+
+  // Handle custom build from LandingView
+  const handleCustomBuild = useCallback(() => {
+    setShowSidebar(true);
   }, []);
 
-  // Load conversation details when selected
-  useEffect(() => {
-    if (currentConversationId) {
-      loadConversation(currentConversationId);
-    }
-  }, [currentConversationId]);
+  // Handle query submission from ChatInput
+  const handleQuerySubmit = useCallback(async (query) => {
+    if (nodes.length === 0) return;
 
-  const loadConversations = async () => {
+    setShowResults(true);
+
+    const config = exportConfig();
+    const executionId = Date.now().toString();
+
+    // Start execution state
+    startExecution(executionId, nodes.length);
+
+    // Set all nodes to pending
+    nodes.forEach((node) => {
+      setNodeState(node.id, 'pending');
+    });
+
     try {
-      const convs = await api.listConversations();
-      setConversations(convs);
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    }
-  };
+      // Connect to WebSocket for streaming
+      const ws = new WebSocket(WS_URL);
 
-  const loadConversation = async (id) => {
-    try {
-      const conv = await api.getConversation(id);
-      setCurrentConversation(conv);
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
-    }
-  };
-
-  const handleNewConversation = async () => {
-    try {
-      const newConv = await api.createConversation();
-      setConversations([
-        { id: newConv.id, created_at: newConv.created_at, message_count: 0 },
-        ...conversations,
-      ]);
-      setCurrentConversationId(newConv.id);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-    }
-  };
-
-  const handleSelectConversation = (id) => {
-    setCurrentConversationId(id);
-  };
-
-  const handleSendMessage = async (content) => {
-    if (!currentConversationId) return;
-
-    setIsLoading(true);
-    try {
-      // Optimistically add user message to UI
-      const userMessage = { role: 'user', content };
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, userMessage],
-      }));
-
-      // Create a partial assistant message that will be updated progressively
-      const assistantMessage = {
-        role: 'assistant',
-        stage1: null,
-        stage2: null,
-        stage3: null,
-        metadata: null,
-        loading: {
-          stage1: false,
-          stage2: false,
-          stage3: false,
-        },
+      ws.onopen = () => {
+        // Send execution request
+        ws.send(JSON.stringify({
+          type: 'execute',
+          query,
+          config,
+        }));
       };
 
-      // Add the partial assistant message
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: [...prev.messages, assistantMessage],
-      }));
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
 
-      // Send message with streaming
-      await api.sendMessageStream(currentConversationId, content, (eventType, event) => {
-        switch (eventType) {
-          case 'stage1_start':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.loading.stage1 = true;
-              return { ...prev, messages };
+        // Capture conversation ID from any message that includes it
+        if (msg.conversationId) {
+          currentConversationId.current = msg.conversationId;
+        }
+
+        switch (msg.type) {
+          case 'stage_update':
+            setStage(msg.stage);
+            break;
+
+          case 'node_state':
+            setNodeState(msg.nodeId, msg.state);
+            break;
+
+          case 'stream_chunk':
+            appendStreamingContent(msg.nodeId, msg.chunk);
+            break;
+
+          case 'response':
+            setResponse(msg.nodeId, {
+              content: msg.content,
+              tokens: msg.tokens,
+              cost: msg.cost,
+            });
+            setNodeState(msg.nodeId, 'complete');
+            break;
+
+          case 'ranking':
+            setRanking(msg.nodeId, {
+              rankings: msg.rankings,
+              reasoning: msg.reasoning,
             });
             break;
 
-          case 'stage1_complete':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.stage1 = event.data;
-              lastMsg.loading.stage1 = false;
-              return { ...prev, messages };
+          case 'final_answer':
+            setFinalAnswer({
+              content: msg.content,
+              tokens: msg.tokens,
+              cost: msg.cost,
             });
-            break;
-
-          case 'stage2_start':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.loading.stage2 = true;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage2_complete':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.stage2 = event.data;
-              lastMsg.metadata = event.metadata;
-              lastMsg.loading.stage2 = false;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage3_start':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.loading.stage3 = true;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'stage3_complete':
-            setCurrentConversation((prev) => {
-              const messages = [...prev.messages];
-              const lastMsg = messages[messages.length - 1];
-              lastMsg.stage3 = event.data;
-              lastMsg.loading.stage3 = false;
-              return { ...prev, messages };
-            });
-            break;
-
-          case 'title_complete':
-            // Reload conversations to get updated title
-            loadConversations();
             break;
 
           case 'complete':
-            // Stream complete, reload conversations list
-            loadConversations();
-            setIsLoading(false);
+            // Save to history with conversation ID from backend
+            addConversation({
+              id: currentConversationId.current,
+              query,
+              config,
+              responses: useExecutionStore.getState().responses,
+              finalAnswer: useExecutionStore.getState().finalAnswer,
+              tokens: useExecutionStore.getState().totalTokens,
+              cost: useExecutionStore.getState().totalCost,
+            });
+            completeExecution();
+            ws.close();
             break;
 
           case 'error':
-            console.error('Stream error:', event.message);
-            setIsLoading(false);
+            console.error('Execution error:', msg.error);
+            setNodeState(msg.nodeId, 'error');
             break;
-
-          default:
-            console.log('Unknown event type:', eventType);
         }
-      });
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        stopExecution();
+      };
+
+      ws.onclose = () => {
+        if (isExecuting) {
+          completeExecution();
+        }
+      };
     } catch (error) {
-      console.error('Failed to send message:', error);
-      // Remove optimistic messages on error
-      setCurrentConversation((prev) => ({
-        ...prev,
-        messages: prev.messages.slice(0, -2),
-      }));
-      setIsLoading(false);
+      console.error('Execution failed:', error);
+      stopExecution();
     }
-  };
+  }, [
+    nodes,
+    exportConfig,
+    startExecution,
+    setNodeState,
+    setStage,
+    setResponse,
+    setRanking,
+    setFinalAnswer,
+    completeExecution,
+    stopExecution,
+    appendStreamingContent,
+    isExecuting,
+    addConversation,
+  ]);
+
+  // Handle stop
+  const handleStop = useCallback(() => {
+    stopExecution();
+  }, [stopExecution]);
+
+  // Handle view logs from history
+  const handleViewLogs = useCallback((conversationId) => {
+    setLogsConversationId(conversationId);
+    setShowLogs(true);
+  }, []);
+
+  // Handle starting over (back to landing)
+  const handleStartOver = useCallback(() => {
+    clearCanvas();
+    setShowSidebar(false);
+  }, [clearCanvas]);
+
+  // Handle replay from history
+  const handleReplay = useCallback((conversation) => {
+    // Load the config from the conversation if available
+    if (conversation.config) {
+      // Recreate the council from the saved config
+      const preset = {
+        name: conversation.config.name || 'Replayed Council',
+        nodes: conversation.config.nodes,
+        edges: conversation.config.edges,
+      };
+      loadPreset(preset);
+    }
+
+    // Restore the execution state from the saved conversation
+    restoreFromHistory(conversation);
+
+    setShowResults(true);
+  }, [loadPreset, restoreFromHistory]);
 
   return (
-    <div className="app">
-      <Sidebar
-        conversations={conversations}
-        currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
-      />
-      <ChatInterface
-        conversation={currentConversation}
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-      />
-    </div>
+    <ReactFlowProvider>
+      <div className="h-screen w-screen flex flex-col bg-bg-primary overflow-hidden">
+        {/* Header - always visible */}
+        <Header
+          onStop={handleStop}
+          onToggleSidebar={() => setShowSidebar(!showSidebar)}
+          showSidebarToggle={hasCouncil}
+          isSidebarOpen={showSidebar}
+          onStartOver={handleStartOver}
+          onShowHelp={() => setShowHelp(true)}
+          onShowHistory={() => setShowHistory(true)}
+          hasHistory={hasHistory}
+          onGoHome={handleStartOver}
+        />
+
+        {/* Main content */}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Landing View - when no council */}
+          {!hasCouncil && !showSidebar && (
+            <LandingView
+              onSelectPreset={handleSelectPreset}
+              onCustomBuild={handleCustomBuild}
+            />
+          )}
+
+          {/* Sidebar - collapsible, hidden by default */}
+          {(hasCouncil || showSidebar) && showSidebar && (
+            <Sidebar onViewLogs={handleViewLogs} />
+          )}
+
+          {/* Canvas View - when council exists or custom build mode */}
+          {(hasCouncil || showSidebar) && (
+            <div className="flex-1 flex flex-col relative">
+              <div className="flex-1 relative">
+                <CouncilCanvas />
+
+                {/* Empty state for custom build */}
+                {!hasCouncil && showSidebar && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <span className="text-5xl mb-4 block opacity-50">🏛️</span>
+                      <h2 className="text-lg font-semibold text-text-secondary mb-2">
+                        Drag models from sidebar
+                      </h2>
+                      <p className="text-sm text-text-muted">
+                        Or select a preset to get started quickly
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Input - Always visible at bottom when council exists */}
+              <ChatInput
+                onSubmit={handleQuerySubmit}
+                isDisabled={nodes.length === 0 || isExecuting}
+                isExecuting={isExecuting}
+                placeholder={nodes.length === 0
+                  ? "Add participants to your council first..."
+                  : "Ask your council a question..."}
+              />
+            </div>
+          )}
+
+          {/* Config Panel (modal) */}
+          <ConfigPanel />
+
+          {/* Edge Panel (floating bottom bar when edge selected) */}
+          <EdgePanel />
+        </div>
+
+        {/* Results Panel (bottom drawer) */}
+        <ResultsPanel
+          isVisible={showResults}
+          onClose={() => setShowResults(false)}
+        />
+
+        {/* Execution Logs Modal */}
+        <ExecutionLogs
+          conversationId={logsConversationId}
+          isVisible={showLogs}
+          onClose={() => {
+            setShowLogs(false);
+            setLogsConversationId(null);
+          }}
+        />
+
+        {/* Help Guide Modal */}
+        <HelpGuide
+          isOpen={showHelp}
+          onClose={() => setShowHelp(false)}
+        />
+
+        {/* History Panel Modal */}
+        <HistoryPanel
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+          onViewLogs={handleViewLogs}
+          onReplay={handleReplay}
+        />
+      </div>
+    </ReactFlowProvider>
   );
 }
-
-export default App;

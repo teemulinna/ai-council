@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+/* Theme configuration for Tailwind 4 */
+@theme {
+  /* Colors */
+  --color-bg-primary: #0D0D0D;
+  --color-bg-secondary: #1A1A1A;
+  --color-bg-tertiary: #242424;
+
+  --color-accent-primary: #6366F1;
+  --color-accent-secondary: #8B5CF6;
+  --color-accent-success: #10B981;
+  --color-accent-warning: #F59E0B;
+  --color-accent-error: #EF4444;
+
+  --color-anthropic: #D4A574;
+  --color-openai: #10A37F;
+  --color-google: #4285F4;
+  --color-deepseek: #5B6EE1;
+  --color-meta: #0668E1;
+
+  --color-text-primary: #FAFAFA;
+  --color-text-secondary: #A1A1A1;
+  --color-text-muted: #6B6B6B;
+
+  /* Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-bg-tertiary);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted);
+}
+
+/* React Flow customization */
+.react-flow__node {
+  background: transparent !important;
+}
+
+/* ===== Custom FlowEdge Styling ===== */
+
+/* Edge default styling - subtle and elegant */
+.react-flow__edge-path {
+  stroke-width: 2;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+  cursor: pointer;
+}
+
+/* Edge hover state - luminous feedback */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #818CF8 !important;
+  stroke-width: 2.5 !important;
+  filter: drop-shadow(0 0 4px rgba(129, 140, 248, 0.4));
+}
+
+/* Edge selected state - vibrant with glow */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #6366F1 !important;
+  stroke-width: 2.5 !important;
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+}
+
+/* Edge interaction area - generous hit target */
+.react-flow__edge .react-flow__edge-interaction {
+  stroke-width: 24 !important;
+  stroke: transparent !important;
+  cursor: pointer;
+}
+
+/* Reconnect anchors - elegant endpoints */
+.react-flow__edgeupdater {
+  cursor: grab !important;
+  transition: transform 0.2s ease;
+}
+
+.react-flow__edgeupdater:hover {
+  transform: scale(1.2);
+}
+
+.react-flow__edgeupdater:active {
+  cursor: grabbing !important;
+}
+
+.react-flow__edgeupdater-source,
+.react-flow__edgeupdater-target {
+  fill: var(--color-accent-primary) !important;
+  stroke: white !important;
+  stroke-width: 2 !important;
+  r: 6 !important;
+  opacity: 0;
+  transition: opacity 0.2s ease, r 0.2s ease, fill 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.react-flow__edge:hover .react-flow__edgeupdater-source,
+.react-flow__edge:hover .react-flow__edgeupdater-target,
+.react-flow__edge.selected .react-flow__edgeupdater-source,
+.react-flow__edge.selected .react-flow__edgeupdater-target {
+  opacity: 1;
+  r: 7 !important;
+}
+
+.react-flow__edgeupdater-source:hover,
+.react-flow__edgeupdater-target:hover {
+  r: 9 !important;
+  fill: #818CF8 !important;
+  filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.5));
+}
+
+/* Connection line - when drawing new edge */
+.react-flow__connection-line {
+  stroke: var(--color-accent-primary) !important;
+  stroke-width: 2 !important;
+  stroke-dasharray: 5, 5;
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Edge label styling */
+.react-flow__edge-label {
+  pointer-events: none;
+}
+
+.react-flow__controls {
+  background-color: var(--color-bg-secondary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+}
+
+.react-flow__controls-button {
+  background-color: var(--color-bg-tertiary) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--color-text-secondary);
+}
+
+.react-flow__minimap {
+  background-color: var(--color-bg-secondary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.5rem !important;
+}
+
+.react-flow__background {
+  background-color: var(--color-bg-primary) !important;
+}
+
+/* Utility classes */
+.glass {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px 4px rgba(99, 102, 241, 0.2);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.2);
+}
+
+/* Markdown prose styling */
+.prose {
+  color: var(--color-text-primary);
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--color-text-primary);
+}
+
+.prose p {
+  color: var(--color-text-secondary);
+}
+
+.prose code {
+  background-color: var(--color-bg-tertiary);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose pre {
+  background-color: var(--color-bg-tertiary);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}

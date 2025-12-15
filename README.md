@@ -1,87 +1,114 @@
-# LLM Council
+# AI Council
 
-![llmcouncil](header.jpg)
+![AI Council](header.jpg)
 
-The idea of this repo is that instead of asking a question to your favorite LLM provider (e.g. OpenAI GPT 5.1, Google Gemini 3.0 Pro, Anthropic Claude Sonnet 4.5, xAI Grok 4, eg.c), you can group them into your "LLM Council". This repo is a simple, local web app that essentially looks like ChatGPT except it uses OpenRouter to send your query to multiple LLMs, it then asks them to review and rank each other's work, and finally a Chairman LLM produces the final response.
+**Multiple minds. One answer.**
 
-In a bit more detail, here is what happens when you submit a query:
+AI Council is a local web app that sends your question to multiple LLMs simultaneously, has them review each other's responses, and synthesizes a final answer through a designated Chairman. Instead of asking one AI, ask a council.
 
-1. **Stage 1: First opinions**. The user query is given to all LLMs individually, and the responses are collected. The individual responses are shown in a "tab view", so that the user can inspect them all one by one.
-2. **Stage 2: Review**. Each individual LLM is given the responses of the other LLMs. Under the hood, the LLM identities are anonymized so that the LLM can't play favorites when judging their outputs. The LLM is asked to rank them in accuracy and insight.
-3. **Stage 3: Final response**. The designated Chairman of the LLM Council takes all of the model's responses and compiles them into a single final answer that is presented to the user.
+## How It Works
 
-## Vibe Code Alert
+1. **Stage 1: Independent Responses** — Your query goes to all selected LLMs. Each responds without seeing the others.
 
-This project was 99% vibe coded as a fun Saturday hack because I wanted to explore and evaluate a number of LLMs side by side in the process of [reading books together with LLMs](https://x.com/karpathy/status/1990577951671509438). It's nice and useful to see multiple responses side by side, and also the cross-opinions of all LLMs on each other's outputs. I'm not going to support it in any way, it's provided here as is for other people's inspiration and I don't intend to improve it. Code is ephemeral now and libraries are over, ask your LLM to change it in whatever way you like.
+2. **Stage 2: Peer Review** — Each LLM receives anonymized responses from the others and ranks them by quality.
 
-## Setup
+3. **Stage 3: Synthesis** — The Chairman LLM integrates all perspectives into a single, comprehensive answer.
 
-### 1. Install Dependencies
+## Quick Start
 
-The project uses [uv](https://docs.astral.sh/uv/) for project management.
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
+- [OpenRouter API key](https://openrouter.ai/)
 
-**Backend:**
+### Setup
+
 ```bash
+# Clone and enter
+git clone https://github.com/yourusername/ai-council.git
+cd ai-council
+
+# Install backend
 uv sync
+
+# Install frontend
+cd frontend && npm install && cd ..
+
+# Configure API key
+echo "OPENROUTER_API_KEY=sk-or-v1-your-key" > .env
 ```
 
-**Frontend:**
-```bash
-cd frontend
-npm install
-cd ..
-```
+### Run
 
-### 2. Configure API Key
-
-Create a `.env` file in the project root:
-
-```bash
-OPENROUTER_API_KEY=sk-or-v1-...
-```
-
-Get your API key at [openrouter.ai](https://openrouter.ai/). Make sure to purchase the credits you need, or sign up for automatic top up.
-
-### 3. Configure Models (Optional)
-
-Edit `backend/config.py` to customize the council:
-
-```python
-COUNCIL_MODELS = [
-    "openai/gpt-5.1",
-    "google/gemini-3-pro-preview",
-    "anthropic/claude-sonnet-4.5",
-    "x-ai/grok-4",
-]
-
-CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
-```
-
-## Running the Application
-
-**Option 1: Use the start script**
 ```bash
 ./start.sh
 ```
 
-**Option 2: Run manually**
+Open [http://localhost:5173](http://localhost:5173)
 
-Terminal 1 (Backend):
-```bash
-uv run python -m backend.main
-```
+## Council Presets
 
-Terminal 2 (Frontend):
-```bash
-cd frontend
-npm run dev
-```
+| Preset | Description | Participants |
+|--------|-------------|--------------|
+| 💬 **Simple Discussion** | Quick 3-way discussion with synthesis | 3 + Chairman |
+| ⚔️ **Debate Council** | Pro vs Con with moderator and judge | 4 |
+| 🎓 **Expert Panel** | Technical, Business, Legal, Creative experts | 5 |
+| 😈 **Devil's Advocate** | Challenge-response stress testing | 4 |
+| 🔬 **Research Council** | Deep multi-perspective analysis | 7 |
 
-Then open http://localhost:5173 in your browser.
+## Features
+
+- **Visual Council Builder** — Drag-and-drop canvas to design custom councils
+- **Real-time Streaming** — Watch responses arrive live via WebSocket
+- **Conversation History** — Review and replay past council sessions
+- **Cost Tracking** — See token usage and estimated costs per query
+- **Customizable Prompts** — Fine-tune each participant's role and behavior
 
 ## Tech Stack
 
-- **Backend:** FastAPI (Python 3.10+), async httpx, OpenRouter API
-- **Frontend:** React + Vite, react-markdown for rendering
-- **Storage:** JSON files in `data/conversations/`
-- **Package Management:** uv for Python, npm for JavaScript
+| Layer | Technology |
+|-------|------------|
+| Backend | FastAPI, Python 3.10+, async httpx |
+| Frontend | React 18, Vite, ReactFlow, Framer Motion, Zustand |
+| API | OpenRouter (unified access to OpenAI, Anthropic, Google, etc.) |
+| Storage | JSON files in `data/conversations/` |
+
+## Configuration
+
+Edit `backend/config.py` to customize default models:
+
+```python
+COUNCIL_MODELS = [
+    "openai/gpt-4.1",
+    "anthropic/claude-sonnet-4",
+    "google/gemini-2.0-flash",
+]
+CHAIRMAN_MODEL = "anthropic/claude-opus-4"
+```
+
+## Project Structure
+
+```
+ai-council/
+├── backend/           # FastAPI server
+│   ├── main.py        # API endpoints & WebSocket
+│   ├── council.py     # Council execution logic
+│   └── openrouter.py  # OpenRouter API client
+├── frontend/          # React application
+│   ├── src/
+│   │   ├── components/    # UI components
+│   │   ├── stores/        # Zustand state
+│   │   └── utils/         # Helpers & presets
+│   └── package.json
+├── start.sh           # Launch script
+└── .env               # API keys (create this)
+```
+
+## Origin
+
+This project was vibe-coded as an exploration tool for evaluating multiple LLMs side by side. Built to see how different models approach the same question and what emerges when they review each other's work.
+
+## License
+
+MIT
