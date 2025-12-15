@@ -34,9 +34,11 @@ describe('ActivityHeatmap Component', () => {
       render(<ActivityHeatmap conversations={[]} />);
 
       // Should show stats with zero values
-      expect(screen.getByText('Total:')).toBeInTheDocument();
-      expect(screen.getByText('0')).toBeInTheDocument();
-      expect(screen.getByText('This week:')).toBeInTheDocument();
+      expect(screen.getByText(/Total:/)).toBeInTheDocument();
+      expect(screen.getByText(/This week:/)).toBeInTheDocument();
+      // The "0" values are in separate spans
+      const zeros = screen.getAllByText('0');
+      expect(zeros.length).toBeGreaterThan(0);
     });
 
     it('should display heatmap grid even with no conversations', () => {
@@ -86,7 +88,7 @@ describe('ActivityHeatmap Component', () => {
 
       // All three conversations on the same day should be counted together
       // Total should show 3
-      const totalStats = screen.getByText('Total:').parentElement;
+      const totalStats = screen.getByText(/Total:/).parentElement;
       expect(totalStats).toHaveTextContent('3');
     });
 
@@ -199,26 +201,27 @@ describe('ActivityHeatmap Component', () => {
 
       render(<ActivityHeatmap conversations={conversations} />);
 
-      const totalStats = screen.getByText('Total:').parentElement;
+      const totalStats = screen.getByText(/Total:/).parentElement;
       expect(totalStats).toHaveTextContent('4');
     });
 
     it('should show correct this week stats', () => {
-      // Current date is Jan 15, 2024 (Monday)
+      // Current date is Jan 15, 2024 12:00 UTC
+      // oneWeekAgo = Jan 8, 2024 12:00 UTC
       const conversations = [
-        { id: '1', timestamp: '2024-01-15T10:00:00.000Z' }, // Today
-        { id: '2', timestamp: '2024-01-14T10:00:00.000Z' }, // Yesterday
-        { id: '3', timestamp: '2024-01-13T10:00:00.000Z' }, // 2 days ago
-        { id: '4', timestamp: '2024-01-09T10:00:00.000Z' }, // 6 days ago (within week)
-        { id: '5', timestamp: '2024-01-08T10:00:00.000Z' }, // 7 days ago (exactly 7 days)
-        { id: '6', timestamp: '2024-01-07T10:00:00.000Z' }, // 8 days ago (outside week)
+        { id: '1', timestamp: '2024-01-15T10:00:00.000Z' }, // Today - counted
+        { id: '2', timestamp: '2024-01-14T10:00:00.000Z' }, // 1 day ago - counted
+        { id: '3', timestamp: '2024-01-13T10:00:00.000Z' }, // 2 days ago - counted
+        { id: '4', timestamp: '2024-01-09T10:00:00.000Z' }, // 6 days ago - counted
+        { id: '5', timestamp: '2024-01-08T10:00:00.000Z' }, // 7d 2h ago - NOT counted (before threshold)
+        { id: '6', timestamp: '2024-01-07T10:00:00.000Z' }, // 8 days ago - NOT counted
       ];
 
       render(<ActivityHeatmap conversations={conversations} />);
 
-      const weekStats = screen.getByText('This week:').parentElement;
-      // Should count conversations from the last 7 days (items 1-5, not 6)
-      expect(weekStats).toHaveTextContent('5');
+      const weekStats = screen.getByText(/This week:/).parentElement;
+      // Should count conversations from the last 7 days (items 1-4, not 5-6)
+      expect(weekStats).toHaveTextContent('4');
     });
 
     it('should show zero for this week when no recent activity', () => {
@@ -228,7 +231,7 @@ describe('ActivityHeatmap Component', () => {
 
       render(<ActivityHeatmap conversations={conversations} />);
 
-      const weekStats = screen.getByText('This week:').parentElement;
+      const weekStats = screen.getByText(/This week:/).parentElement;
       expect(weekStats).toHaveTextContent('0');
     });
   });
@@ -241,10 +244,10 @@ describe('ActivityHeatmap Component', () => {
 
       render(<ActivityHeatmap conversations={conversations} />);
 
-      const totalStats = screen.getByText('Total:').parentElement;
+      const totalStats = screen.getByText(/Total:/).parentElement;
       expect(totalStats).toHaveTextContent('1');
 
-      const weekStats = screen.getByText('This week:').parentElement;
+      const weekStats = screen.getByText(/This week:/).parentElement;
       expect(weekStats).toHaveTextContent('1');
     });
 
@@ -256,11 +259,11 @@ describe('ActivityHeatmap Component', () => {
 
       render(<ActivityHeatmap conversations={conversations} />);
 
-      const totalStats = screen.getByText('Total:').parentElement;
+      const totalStats = screen.getByText(/Total:/).parentElement;
       expect(totalStats).toHaveTextContent('100');
 
       // Should render without errors
-      expect(screen.getByText('This week:')).toBeInTheDocument();
+      expect(screen.getByText(/This week:/)).toBeInTheDocument();
     });
 
     it('should handle conversations with various timestamp formats', () => {
@@ -273,7 +276,7 @@ describe('ActivityHeatmap Component', () => {
       render(<ActivityHeatmap conversations={conversations} />);
 
       // All should be counted
-      const totalStats = screen.getByText('Total:').parentElement;
+      const totalStats = screen.getByText(/Total:/).parentElement;
       expect(totalStats).toHaveTextContent('3');
     });
 
@@ -286,7 +289,7 @@ describe('ActivityHeatmap Component', () => {
       render(<ActivityHeatmap conversations={conversations} />);
 
       // Both should count as same day
-      const totalStats = screen.getByText('Total:').parentElement;
+      const totalStats = screen.getByText(/Total:/).parentElement;
       expect(totalStats).toHaveTextContent('2');
     });
   });
@@ -513,7 +516,7 @@ describe('ActivityHeatmap Component', () => {
       expect(endTime - startTime).toBeLessThan(1000);
 
       // Should still display stats correctly
-      expect(screen.getByText('Total:')).toBeInTheDocument();
+      expect(screen.getByText(/Total:/)).toBeInTheDocument();
     });
 
     it('should not recalculate when receiving same conversations reference', () => {
@@ -527,7 +530,7 @@ describe('ActivityHeatmap Component', () => {
       rerender(<ActivityHeatmap conversations={conversations} />);
 
       // Should still work correctly (memoization doesn't break functionality)
-      expect(screen.getByText('Total:')).toBeInTheDocument();
+      expect(screen.getByText(/Total:/)).toBeInTheDocument();
     });
   });
 });

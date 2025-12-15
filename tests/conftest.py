@@ -96,7 +96,7 @@ def mock_stage3_response():
 
 
 @pytest.fixture
-async def mock_cache():
+def mock_cache():
     """Mock cache instance."""
     from backend.cache import ResponseCache
 
