@@ -1,0 +1,12 @@
+{"durationMinutes":60,"enabled":true,"level":"info","message":"[LearningInit] Initializing Nightly-Learner system","mode":"hybrid","service":"agentic-qe-fleet","startHour":2,"timestamp":"2025-12-15T17:51:23.000Z"}
+{"level":"info","message":"[LearningInit] Created learning configuration","path":"/Users/teemulinna/projects/ai-council/.agentic-qe/learning-config.json","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:51:23.003Z"}
+{"bufferSize":100,"flushInterval":30000,"level":"info","message":"[ExperienceCapture] Started","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:51:23.008Z"}
+{"bufferSize":0,"level":"info","message":"[LearningInit] ExperienceCapture initialized","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:51:23.009Z","totalCaptured":0}
+{"level":"info","message":"[ExperienceCapture] Stopped","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:51:23.009Z","totalCaptured":0,"totalFlushed":0}
+{"level":"info","message":"[LearningInit] Created scheduler startup script","path":"/Users/teemulinna/projects/ai-council/.agentic-qe/start-learning.js","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:51:23.010Z"}
+{"level":"info","message":"[LearningInit] Learning system initialization complete","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:51:23.010Z"}
+{"level":"info","message":"AgentRegistry memory store initialized successfully","service":"agentic-qe-fleet","timestamp":"2025-12-15T17:52:47.141Z"}
+{"level":"info","message":"Clearing all agents from registry","service":"agentic-qe-fleet","timestamp":"2025-12-15T18:03:11.124Z"}
+{"level":"info","message":"AgentRegistry memory store initialized successfully","service":"agentic-qe-fleet","timestamp":"2025-12-15T18:04:02.600Z"}
+{"level":"info","message":"Clearing all agents from registry","service":"agentic-qe-fleet","timestamp":"2025-12-15T18:12:13.169Z"}
+{"level":"info","message":"AgentRegistry memory store initialized successfully","service":"agentic-qe-fleet","timestamp":"2025-12-15T18:52:25.911Z"}
