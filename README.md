@@ -164,18 +164,21 @@ MAX_BUDGET=10.0                        # Max spend per hour (USD)
 
 ### Available Models
 
-AI Council uses [OpenRouter](https://openrouter.ai/) which provides access to 200+ models. Models are fetched live, so you always have access to the latest releases:
+AI Council uses [OpenRouter](https://openrouter.ai/) which provides access to 200+ models. Models are fetched live from OpenRouter, so you always have the latest releases.
 
-| Provider | Current Models (Dec 2025) |
-|----------|---------------------------|
-| OpenAI | GPT-4.5, o3, o3-mini, GPT-4o |
-| Anthropic | Claude 4 Opus, Claude 4 Sonnet, Claude 3.5 Sonnet |
-| Google | Gemini 2.5 Pro, Gemini 2.5 Flash |
-| Meta | Llama 4 405B, Llama 3.3 70B |
-| Mistral | Mistral Large 2, Codestral |
-| xAI | Grok 3, Grok 3 mini |
-| DeepSeek | DeepSeek V3, DeepSeek R1 |
-| And many more... | See [OpenRouter Models](https://openrouter.ai/models) |
+**Models used in presets:**
+
+| Model ID | Used As |
+|----------|---------|
+| `anthropic/claude-opus-4.5` | Chairman / Synthesizer |
+| `anthropic/claude-sonnet-4.5` | Primary Responder / Expert |
+| `openai/gpt-5.2-chat` | Analyst / Advocate |
+| `openai/gpt-5-pro` | Integrator |
+| `google/gemini-3-pro-preview` | Critic / Legal Expert |
+| `deepseek/deepseek-r1` | Creative / Visionary |
+| `nvidia/llama-3.3-nemotron-super-49b-v1.5` | Pragmatist |
+
+**Browse all models:** In Edit mode, click the **Models** tab to see 200+ models with live pricing from OpenRouter.
 
 ### Building Custom Councils
 
@@ -354,16 +357,17 @@ See [docs/SECURITY_REPORT.md](docs/SECURITY_REPORT.md) for the full OWASP audit.
 
 ## Cost Management
 
-OpenRouter pricing varies by model. Typical costs (December 2025):
+OpenRouter pricing varies by model. Preset estimated costs:
 
-| Model Tier | Cost per 1M tokens | Example Models |
-|------------|-------------------|----------------|
-| Budget | $0.05-0.30 | Llama 3.3 8B, Gemini 2.5 Flash, DeepSeek V3 |
-| Standard | $0.50-3 | GPT-4o, Claude 3.5 Sonnet, Grok 3 mini |
-| Premium | $5-30 | GPT-4.5, Claude 4 Opus, o3 |
-| Reasoning | $15-60 | o3, DeepSeek R1 |
+| Preset | Models | Est. Cost |
+|--------|--------|-----------|
+| Simple Discussion | 3 models + chairman | ~$0.05 |
+| Debate Council | 4 models | ~$0.12 |
+| Expert Panel | 5 models + chairman | ~$0.20 |
+| Devil's Advocate | 4 models | ~$0.15 |
+| Research Council | 7 models | ~$0.40 |
 
-AI Council shows estimated costs per council in the Edit sidebar. Set `MAX_BUDGET` in .env to limit hourly spending.
+Costs are shown in real-time in the Edit sidebar. Set `MAX_BUDGET` in .env to limit hourly spending. Check [OpenRouter pricing](https://openrouter.ai/models) for current model rates.
 
 ---
 
