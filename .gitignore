@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+venv/
+backend/venv/
 
 # Keys and secrets
 .env

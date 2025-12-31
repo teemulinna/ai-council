@@ -1,6 +1,6 @@
 # AI Council
 
-![AI Council](header.jpg)
+![AI Council](header.png)
 
 **Multiple minds. One answer.**
 

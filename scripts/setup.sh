@@ -55,12 +55,24 @@ else
     echo -e "${GREEN}✓ .env already exists${NC}"
 fi
 
-# 3. Initialize SQLite database
-echo -e "\n${YELLOW}🗄️  Initializing database...${NC}"
+# 3. Set up Python virtual environment first (needed for database init)
+echo -e "\n${YELLOW}📦 Setting up Python environment...${NC}"
 cd "$PROJECT_ROOT/backend"
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+fi
+source venv/bin/activate
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt --quiet 2>/dev/null || pip install -r requirements.txt
+    echo -e "${GREEN}✓ Backend dependencies installed${NC}"
+fi
 
-# Create Python script to init DB
-python3 << 'PYEOF'
+# 4. Initialize SQLite database
+echo -e "\n${YELLOW}🗄️  Initializing database...${NC}"
+
+# Create Python script to init DB (using venv python)
+python << 'PYEOF'
 import sys
 sys.path.insert(0, '.')
 try:
@@ -70,15 +82,6 @@ try:
 except Exception as e:
     print(f"⚠️  Database init skipped: {e}")
 PYEOF
-
-# 4. Install backend dependencies if needed
-echo -e "\n${YELLOW}📦 Checking backend dependencies...${NC}"
-if [ -f "$PROJECT_ROOT/backend/requirements.txt" ]; then
-    if command -v pip3 &> /dev/null; then
-        pip3 install -r "$PROJECT_ROOT/backend/requirements.txt" --quiet 2>/dev/null || true
-        echo -e "${GREEN}✓ Backend dependencies checked${NC}"
-    fi
-fi
 
 # 5. Install frontend dependencies if needed
 echo -e "\n${YELLOW}📦 Checking frontend dependencies...${NC}"

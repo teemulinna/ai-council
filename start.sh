@@ -130,9 +130,14 @@ fi
 
 PORT=$BACKEND_PORT
 
-# Install Python dependencies if needed
-echo "📦 Checking Python dependencies..."
+# Set up Python virtual environment and install dependencies
+echo "📦 Setting up Python environment..."
 cd backend
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+fi
+source venv/bin/activate
 if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt -q
     echo -e "${GREEN}✅ Backend dependencies installed${NC}"
@@ -156,6 +161,7 @@ fi
 echo ""
 echo "🚀 Starting backend server on port $PORT..."
 cd backend
+source venv/bin/activate
 if [ "$REDIS_AVAILABLE" = true ]; then
     REDIS_URL="redis://localhost:6379" PORT=$PORT python -m uvicorn main:app --host 0.0.0.0 --port $PORT --reload &
 else
