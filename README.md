@@ -121,10 +121,12 @@ npm run dev
 | **Devil's Advocate** | Challenge-response format | Stress-testing ideas |
 | **Research Council** | 7 diverse perspectives | Deep analysis |
 
-**Custom** — Drag models from the sidebar onto the canvas:
-- Click a model to configure its role and system prompt
-- Connect models to define the flow
-- Assign one model as Chairman
+**Custom** — Build your own council from scratch:
+- Click **Edit** → **Models** tab to see all 200+ available models
+- Drag models onto the canvas to add them
+- Click any model to configure its role, system prompt, and personality
+- Designate one model as **Chairman** to synthesize the final answer
+- Save your custom configuration for reuse
 
 ### 2. Ask Your Question
 
@@ -162,24 +164,42 @@ MAX_BUDGET=10.0                        # Max spend per hour (USD)
 
 ### Available Models
 
-AI Council uses [OpenRouter](https://openrouter.ai/) which provides access to 100+ models:
+AI Council uses [OpenRouter](https://openrouter.ai/) which provides access to 200+ models. Models are fetched live, so you always have access to the latest releases:
 
-| Provider | Popular Models |
-|----------|---------------|
-| OpenAI | GPT-4o, GPT-4 Turbo, o1-preview |
-| Anthropic | Claude 3.5 Sonnet, Claude 3 Opus |
-| Google | Gemini 2.0 Flash, Gemini 1.5 Pro |
-| Meta | Llama 3.1 405B, Llama 3.2 |
-| Mistral | Mistral Large, Mixtral 8x22B |
+| Provider | Current Models (Dec 2025) |
+|----------|---------------------------|
+| OpenAI | GPT-4.5, o3, o3-mini, GPT-4o |
+| Anthropic | Claude 4 Opus, Claude 4 Sonnet, Claude 3.5 Sonnet |
+| Google | Gemini 2.5 Pro, Gemini 2.5 Flash |
+| Meta | Llama 4 405B, Llama 3.3 70B |
+| Mistral | Mistral Large 2, Codestral |
+| xAI | Grok 3, Grok 3 mini |
+| DeepSeek | DeepSeek V3, DeepSeek R1 |
 | And many more... | See [OpenRouter Models](https://openrouter.ai/models) |
 
-### Customizing Roles
+### Building Custom Councils
 
-Each council participant can have:
-- **Display Name** — How it appears in the UI
-- **Role** — Analyst, Devil's Advocate, Synthesizer, etc.
-- **System Prompt** — Custom instructions for behavior
-- **Temperature** — Creativity level (0.0-1.0)
+In **Edit mode**, you have full control over your council:
+
+**Adding Models:**
+- Click **Models** tab in the sidebar
+- Browse or search 200+ available models
+- Drag any model onto the canvas
+- Each model shows estimated cost per query
+
+**Configuring Participants:**
+- Click any model node to open settings
+- Set a **Display Name** and **Role** (Analyst, Devil's Advocate, etc.)
+- Write a **System Prompt** to define behavior
+- Adjust **Temperature** (0.0 = focused, 1.0 = creative)
+
+**Removing Models:**
+- Select a node and press Delete, or
+- Right-click and choose Remove
+
+**Designating Chairman:**
+- Click a model node → Set as Chairman
+- The Chairman synthesizes all responses into the final answer
 
 ---
 
@@ -334,15 +354,16 @@ See [docs/SECURITY_REPORT.md](docs/SECURITY_REPORT.md) for the full OWASP audit.
 
 ## Cost Management
 
-OpenRouter pricing varies by model. Typical costs:
+OpenRouter pricing varies by model. Typical costs (December 2025):
 
 | Model Tier | Cost per 1M tokens | Example Models |
 |------------|-------------------|----------------|
-| Budget | $0.10-0.50 | Llama 3.1 8B, Gemini Flash |
-| Standard | $1-5 | GPT-4o-mini, Claude 3.5 Sonnet |
-| Premium | $10-60 | GPT-4, Claude 3 Opus, o1 |
+| Budget | $0.05-0.30 | Llama 3.3 8B, Gemini 2.5 Flash, DeepSeek V3 |
+| Standard | $0.50-3 | GPT-4o, Claude 3.5 Sonnet, Grok 3 mini |
+| Premium | $5-30 | GPT-4.5, Claude 4 Opus, o3 |
+| Reasoning | $15-60 | o3, DeepSeek R1 |
 
-AI Council shows estimated costs in real-time. Set `MAX_BUDGET` in .env to limit spending.
+AI Council shows estimated costs per council in the Edit sidebar. Set `MAX_BUDGET` in .env to limit hourly spending.
 
 ---
 
