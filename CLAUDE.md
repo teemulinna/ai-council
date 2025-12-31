@@ -1,4 +1,151 @@
-# Claude Code Configuration - SPARC Development Environment
+# AI Council - Project Configuration
+
+---
+
+## Section 1: User Profile
+
+**Who:** Technical founder (developer + product + entrepreneur) who wears many hats. Comfortable with technology and technical concepts but prefers to focus on the "what" rather than "how."
+
+**Goals:**
+- Build a polished, aesthetic MVP for multi-LLM orchestration
+- Start with personal use, expand to team, eventually open source
+- All core features working: parallel queries, peer review, chairman synthesis, visual builder
+
+**Communication preferences:**
+- Show working demos when possible
+- Use screenshots or screen recordings when demos aren't practical
+- Explain changes in terms of user experience, not technical details
+
+**Constraints:**
+- No hard deadline - quality over speed
+- Must maintain extensibility for future features
+- Open source readiness is important
+
+---
+
+## Section 2: Communication Rules
+
+- NEVER ask technical questions unless truly uncertain - make decisions as the expert
+- NEVER use jargon or code references when communicating results
+- Explain everything like explaining to a smart friend who doesn't work in tech
+- If referencing something technical, immediately translate it
+- Focus on **what changed for the user**, not **what code changed**
+
+---
+
+## Section 3: Decision-Making Authority
+
+Full authority over all technical decisions:
+- Languages, frameworks, architecture, libraries
+- Hosting, file structure, build configuration
+- Testing strategies, CI/CD setup
+- Security implementations
+
+**Principles:**
+- Choose boring, reliable, well-supported technologies
+- Optimize for maintainability and simplicity
+- Document technical decisions in `/docs/TECHNICAL.md`
+
+---
+
+## Section 4: When to Involve User
+
+Only bring decisions when they directly affect user experience:
+- "This can load instantly but look simpler, or look richer but take 2 seconds. Which matters more?"
+- "I can make this work on phones too, but it will take an extra day. Worth it?"
+
+**Never ask about:**
+- Databases, APIs, frameworks, languages, architecture
+- Library choices, dependency decisions, file organization
+- How to implement any feature technically
+
+---
+
+## Section 5: Engineering Standards (Apply Automatically)
+
+- Clean, well-organized, maintainable code
+- Comprehensive automated testing
+- Self-verification - system checks itself
+- Graceful error handling with friendly messages
+- Input validation and security best practices
+- Clear commit messages
+- Development/production environment separation
+
+---
+
+## Section 6: Quality Assurance
+
+- Test everything before showing user
+- Never show something broken
+- If something isn't working, fix it - don't explain the technical problem
+- Everything demonstrated should work
+- Build in automated checks before changes go live
+
+---
+
+## Section 7: Showing Progress
+
+- Working demos whenever possible
+- Screenshots/recordings when demos aren't practical
+- Describe changes in user experience terms
+- Celebrate milestones in user terms: "People can now sign up" not "Implemented auth flow"
+
+---
+
+## Section 8: Project-Specific Details
+
+**Project:** AI Council - Multi-LLM Orchestration Platform
+**Tagline:** "Multiple minds. One answer."
+
+**Core Features:**
+1. **Parallel Queries** - Ask multiple LLMs the same question simultaneously
+2. **Peer Review** - LLMs evaluate each other's responses
+3. **Chairman Synthesis** - One model combines the best of all answers
+4. **Visual Builder** - Drag-and-drop interface for creating council configurations
+
+**Target Audience:**
+1. Personal power users (immediate)
+2. Teams and organizations (near-term)
+3. Open source community (future)
+
+**Visual Direction:**
+- Progressive disclosure: simple surface, depth for power users
+- Avoid "generic AI slop" aesthetics
+- Distinctive and memorable
+- Dark mode friendly
+
+**Technical Stack:**
+- Backend: FastAPI + Python
+- Frontend: React 19 + Vite + ReactFlow + Zustand + Tailwind
+- LLM Access: OpenRouter (unified API for all models)
+- Database: SQLite
+- Tests: 90/90 passing
+
+---
+
+## Section 9: UI Skills
+
+### Frontend Aesthetics Guidelines
+
+Avoid generic, "on distribution" outputs. Create distinctive frontends that surprise and delight.
+
+**Focus on:**
+- **Typography:** Beautiful, unique fonts. Avoid Inter, Arial, Roboto.
+- **Color & Theme:** Cohesive aesthetic. Dominant colors with sharp accents.
+- **Motion:** CSS animations for micro-interactions. Motion library for React.
+- **Backgrounds:** Create atmosphere and depth. Layer gradients, use geometric patterns.
+
+**Avoid:**
+- Overused font families (Inter, Roboto, Arial, system fonts)
+- Clichéd color schemes (purple gradients on white)
+- Predictable layouts and component patterns
+- Cookie-cutter design lacking character
+
+**Rule:** Use dev-browser skill when unsure how it looks. Focus on maximum usability and customer experience.
+
+---
+
+# Technical Configuration (For Claude Code)
 
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 

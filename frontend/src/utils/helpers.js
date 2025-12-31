@@ -68,6 +68,22 @@ export const providerColors = {
   other: '#6B6B6B',
 };
 
+// Role icons for visual identification
+export const roleIcons = {
+  'Primary Responder': '💬',
+  "Devil's Advocate": '😈',
+  'Fact Checker': '🔍',
+  'Creative Thinker': '💡',
+  'Practical Advisor': '🛠️',
+  'Domain Expert': '🎓',
+  'Synthesizer': '🔗',
+  'Chairman': '👑',
+  'Researcher': '📚',
+  'Critic': '📝',
+  'Strategist': '♟️',
+  'Optimizer': '⚡',
+};
+
 // Available models - Updated for 2025 (from OpenRouter API)
 // These will be replaced by dynamic fetching
 export const AVAILABLE_MODELS = [

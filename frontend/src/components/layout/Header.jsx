@@ -25,19 +25,20 @@ export default function Header({
   const hasCouncil = nodes.length > 0;
 
   return (
-    <header className="h-14 bg-bg-secondary border-b border-white/10 flex items-center px-4 gap-4">
+    <header className="h-14 bg-bg-secondary border-b border-white/10 flex items-center px-3 sm:px-4 gap-2 sm:gap-4">
       {/* Logo - clickable to go home */}
       <button
         onClick={onGoHome}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-accent-primary rounded-lg p-1"
         title="Return to home"
+        aria-label="Return to home"
       >
-        <span className="text-xl">🏛️</span>
-        <span className="text-sm font-semibold text-text-primary">AI Council</span>
+        <span className="text-xl" role="img" aria-hidden="true">🏛️</span>
+        <span className="text-sm font-semibold text-text-primary hide-mobile">AI Council</span>
       </button>
 
       {/* Divider */}
-      <div className="w-px h-6 bg-white/10" />
+      <div className="w-px h-6 bg-white/10 hide-mobile" />
 
       {/* Council name (editable) - only show when council exists */}
       {hasCouncil && (
@@ -52,19 +53,20 @@ export default function Header({
         />
       )}
 
-      {/* Stats */}
-      <div className="flex items-center gap-4 ml-auto text-xs text-text-secondary">
+      {/* Stats - responsive */}
+      <div className="flex items-center gap-2 sm:gap-4 ml-auto text-xs text-text-secondary">
         {hasCouncil && (
           <>
-            <span>{participantCount} participants</span>
-            {hasChairman && <span className="text-accent-warning">+ Chairman</span>}
+            <span className="hide-mobile">{participantCount} participants</span>
+            <span className="hide-desktop">{participantCount}</span>
+            {hasChairman && <span className="text-accent-gold hide-mobile">+ Chairman</span>}
           </>
         )}
         {totalTokens > 0 && (
           <>
-            <span className="w-px h-4 bg-white/10" />
-            <span>{formatTokens(totalTokens)} tokens</span>
-            <span>{formatCost(totalCost)}</span>
+            <span className="w-px h-4 bg-white/10 hide-mobile" />
+            <span className="hide-mobile">{formatTokens(totalTokens)} tokens</span>
+            <span className="font-medium">{formatCost(totalCost)}</span>
           </>
         )}
       </div>
@@ -166,12 +168,13 @@ export default function Header({
       {isExecuting && (
         <button
           onClick={onStop}
-          className="px-4 py-2 bg-accent-error text-white text-sm font-medium
+          aria-label="Stop execution"
+          className="px-3 sm:px-4 py-2 bg-accent-error text-white text-sm font-medium
                      rounded-lg hover:bg-accent-error/90 transition-colors
-                     flex items-center gap-2"
+                     flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-accent-error focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary"
         >
-          <span className="w-2 h-2 rounded-sm bg-white" />
-          Stop
+          <span className="w-2 h-2 rounded-sm bg-white" aria-hidden="true" />
+          <span className="hide-mobile">Stop</span>
         </button>
       )}
     </header>

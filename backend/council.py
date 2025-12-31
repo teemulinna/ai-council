@@ -280,30 +280,97 @@ def parse_ranking_from_text(ranking_text: str) -> List[str]:
         ranking_text: The full text response from the model
 
     Returns:
-        List of response labels in ranked order
+        List of response labels in ranked order (max 3-5 items typically)
     """
     import re
 
-    # Look for "FINAL RANKING:" section
-    if "FINAL RANKING:" in ranking_text:
-        # Extract everything after "FINAL RANKING:"
-        parts = ranking_text.split("FINAL RANKING:")
-        if len(parts) >= 2:
-            ranking_section = parts[1]
-            # Try to extract numbered list format (e.g., "1. Response A")
-            # This pattern looks for: number, period, optional space, "Response X"
-            numbered_matches = re.findall(r'\d+\.\s*Response [A-Z]', ranking_section)
-            if numbered_matches:
-                # Extract just the "Response X" part
-                return [re.search(r'Response [A-Z]', m).group() for m in numbered_matches]
+    def extract_ranking_from_section(section: str) -> List[str]:
+        """Extract rankings from a text section, looking for consecutive numbered list."""
+        # Find all numbered entries with Response labels
+        # Pattern: number followed by separator, then "Response X"
+        pattern = r'(\d+)[\.\)\:\s]+\s*Response\s+([A-Z])'
+        matches = re.findall(pattern, section, re.IGNORECASE)
 
-            # Fallback: Extract all "Response X" patterns in order
-            matches = re.findall(r'Response [A-Z]', ranking_section)
-            return matches
+        if not matches:
+            return []
 
-    # Fallback: try to find any "Response X" patterns in order
-    matches = re.findall(r'Response [A-Z]', ranking_text)
-    return matches
+        # Build a dict: position -> letter
+        ranking_dict = {}
+        for num_str, letter in matches:
+            num = int(num_str)
+            # Only accept positions 1-10 (reasonable ranking range)
+            if 1 <= num <= 10:
+                # If we already have this position, only keep first occurrence
+                if num not in ranking_dict:
+                    ranking_dict[num] = letter.upper()
+
+        if not ranking_dict:
+            return []
+
+        # Check if we have consecutive numbers starting from 1
+        # This filters out scattered mentions like "Response A in point 3..."
+        sorted_positions = sorted(ranking_dict.keys())
+
+        # Must start with 1 and be consecutive (1,2,3 not 1,3,5)
+        if sorted_positions[0] != 1:
+            return []
+
+        results = []
+        for i, expected_pos in enumerate(range(1, len(sorted_positions) + 1)):
+            if i < len(sorted_positions) and sorted_positions[i] == expected_pos:
+                results.append(f"Response {ranking_dict[expected_pos]}")
+            else:
+                break  # Stop at first gap
+
+        # Must have at least 2 rankings to be valid
+        return results if len(results) >= 2 else []
+
+    # Strategy 1: Look for explicit "FINAL RANKING:" section
+    ranking_headers = [
+        r'FINAL RANKING[:\s]*',
+        r'MY RANKING[:\s]*',
+        r'RANKING[:\s]*\n',
+        r'RANKED ORDER[:\s]*',
+    ]
+
+    for header_pattern in ranking_headers:
+        ranking_match = re.search(header_pattern, ranking_text, re.IGNORECASE)
+        if ranking_match:
+            # Extract section after the header (limit to avoid evaluation text)
+            ranking_section = ranking_text[ranking_match.end():ranking_match.end() + 300]
+            results = extract_ranking_from_section(ranking_section)
+            if results:
+                return results
+
+    # Strategy 2: Look for ranking at the very end of the response
+    # Split into paragraphs and check the last few
+    paragraphs = ranking_text.strip().split('\n\n')
+    if len(paragraphs) >= 1:
+        # Check last 2 paragraphs
+        last_content = '\n\n'.join(paragraphs[-2:]) if len(paragraphs) >= 2 else paragraphs[-1]
+        # Limit to last 400 chars
+        last_content = last_content[-400:]
+        results = extract_ranking_from_section(last_content)
+        if results:
+            return results
+
+    # Strategy 3: Look for bullet-point rankings anywhere
+    bullet_pattern = r'[-•*]\s*Response\s+([A-Z])\s*(?:\(|$|\n)'
+    bullet_matches = re.findall(bullet_pattern, ranking_text[-500:], re.IGNORECASE)
+    if len(bullet_matches) >= 2:
+        # Deduplicate while preserving order
+        seen = set()
+        results = []
+        for letter in bullet_matches:
+            upper_letter = letter.upper()
+            if upper_letter not in seen:
+                seen.add(upper_letter)
+                results.append(f"Response {upper_letter}")
+        if len(results) >= 2:
+            return results
+
+    # No valid ranking found
+    return []
 
 
 def calculate_aggregate_rankings(

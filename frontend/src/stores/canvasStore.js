@@ -37,6 +37,7 @@ export const useCanvasStore = create(
             provider: nodeData.provider || 'anthropic',
             isChairman: nodeData.isChairman || false,
             temperature: nodeData.temperature || 0.7,
+            reasoningPattern: nodeData.reasoningPattern || 'standard',
           },
         };
 
@@ -120,9 +121,13 @@ export const useCanvasStore = create(
       // Load preset (atomic operation - clears and loads in one state update)
       loadPreset: (preset) => {
         // Create deep copies to ensure new object references for React Flow
+        // Also ensure default values for any missing data fields
         const newNodes = preset.nodes.map(node => ({
           ...node,
-          data: { ...node.data },
+          data: {
+            reasoningPattern: 'standard', // Default first, so preset can override
+            ...node.data,
+          },
           position: { ...node.position },
         }));
         const newEdges = preset.edges.map(edge => ({ ...edge }));

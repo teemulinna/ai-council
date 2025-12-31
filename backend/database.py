@@ -58,12 +58,19 @@ def init_database():
                 query TEXT NOT NULL,
                 config TEXT,
                 responses TEXT,
+                rankings TEXT,
                 final_answer TEXT,
                 total_tokens INTEGER DEFAULT 0,
                 total_cost REAL DEFAULT 0.0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Add rankings column if it doesn't exist (migration for existing DBs)
+        try:
+            cursor.execute('ALTER TABLE conversations ADD COLUMN rankings TEXT')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
         # Execution logs table for detailed interaction tracking
         cursor.execute('''
@@ -181,20 +188,22 @@ def delete_custom_role(role_id: str):
 # === Conversation Operations ===
 
 def save_conversation(conv: Dict) -> str:
-    """Save a conversation."""
+    """Save or update a conversation."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO conversations (id, query, config, responses, final_answer, total_tokens, total_cost)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO conversations
+            (id, query, config, responses, rankings, final_answer, total_tokens, total_cost)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             conv['id'],
             conv['query'],
             json.dumps(conv.get('config', {})),
             json.dumps(conv.get('responses', {})),
+            json.dumps(conv.get('rankings', {})),
             json.dumps(conv.get('final_answer', {})),
-            conv.get('total_tokens', 0),
-            conv.get('total_cost', 0.0)
+            conv.get('total_tokens', conv.get('tokens', 0)),
+            conv.get('total_cost', conv.get('cost', 0.0))
         ))
         conn.commit()
         return conv['id']
@@ -211,6 +220,7 @@ def get_conversations(limit: int = 50) -> List[Dict]:
             conv = dict(row)
             conv['config'] = json.loads(conv['config']) if conv['config'] else {}
             conv['responses'] = json.loads(conv['responses']) if conv['responses'] else {}
+            conv['rankings'] = json.loads(conv['rankings']) if conv.get('rankings') else {}
             conv['final_answer'] = json.loads(conv['final_answer']) if conv['final_answer'] else {}
             conversations.append(conv)
         return conversations

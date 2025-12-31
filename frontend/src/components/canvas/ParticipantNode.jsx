@@ -53,7 +53,7 @@ const ParticipantNode = ({ id, data, selected }) => {
       case 'streaming':
         return 'border-accent-primary glow-accent';
       case 'complete':
-        return 'border-accent-success glow-success';
+        return 'border-accent-success glow-success success-pulse-ring';
       case 'error':
         return 'border-accent-error';
       default:
@@ -94,9 +94,9 @@ const ParticipantNode = ({ id, data, selected }) => {
         style={{ backgroundColor: providerColor }}
       />
 
-      {/* Chairman badge */}
+      {/* Chairman badge with glow */}
       {data.isChairman && (
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-accent-warning text-bg-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-accent-gold text-bg-primary text-[10px] font-bold px-2 py-0.5 rounded-full chairman-glow shadow-lg">
           CHAIRMAN
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import { useCanvasStore } from './stores/canvasStore';
@@ -16,6 +16,7 @@ import ChatInput from './components/ChatInput';
 import ExecutionLogs from './components/panels/ExecutionLogs';
 import HelpGuide from './components/HelpGuide';
 import HistoryPanel from './components/panels/HistoryPanel';
+import ExecutionProgress from './components/ExecutionProgress';
 
 // Use environment variables for API URLs
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8347/ws/execute';
@@ -47,7 +48,13 @@ export default function App() {
 
   const addConversation = useHistoryStore((s) => s.addConversation);
   const conversations = useHistoryStore((s) => s.conversations);
+  const syncWithBackend = useHistoryStore((s) => s.syncWithBackend);
   const restoreFromHistory = useExecutionStore((s) => s.restoreFromHistory);
+
+  // Sync history with backend on app load
+  useEffect(() => {
+    syncWithBackend();
+  }, [syncWithBackend]);
 
   // Has council been set up?
   const hasCouncil = nodes.length > 0;
@@ -72,8 +79,8 @@ export default function App() {
     const config = exportConfig();
     const executionId = Date.now().toString();
 
-    // Start execution state
-    startExecution(executionId, nodes.length);
+    // Start execution state with the query
+    startExecution(executionId, nodes.length, query);
 
     // Set all nodes to pending
     nodes.forEach((node) => {
@@ -145,6 +152,7 @@ export default function App() {
               query,
               config,
               responses: useExecutionStore.getState().responses,
+              rankings: useExecutionStore.getState().rankings, // Include rankings!
               finalAnswer: useExecutionStore.getState().finalAnswer,
               tokens: useExecutionStore.getState().totalTokens,
               cost: useExecutionStore.getState().totalCost,
@@ -228,7 +236,12 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="h-screen w-screen flex flex-col bg-bg-primary overflow-hidden">
+      {/* Skip to main content - Accessibility */}
+      <a href="#main-content" className="skip-to-main">
+        Skip to main content
+      </a>
+
+      <div id="main-content" className="h-screen w-screen flex flex-col bg-bg-primary overflow-hidden">
         {/* Header - always visible */}
         <Header
           onStop={handleStop}
@@ -327,6 +340,9 @@ export default function App() {
           onViewLogs={handleViewLogs}
           onReplay={handleReplay}
         />
+
+        {/* Execution Progress Overlay */}
+        <ExecutionProgress />
       </div>
     </ReactFlowProvider>
   );

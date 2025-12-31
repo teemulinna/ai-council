@@ -1,0 +1,21 @@
+#!/bin/bash
+# Pre-commit hook to prevent accidental secret commits
+
+echo "🔍 Checking for secrets in staged files..."
+
+# Patterns to check
+PATTERNS="sk-[a-zA-Z0-9]{20,}|api[_-]?key\s*[:=]\s*['\"][^'\"]+|password\s*[:=]\s*['\"][^'\"]+"
+
+# Check staged files
+if git diff --cached --diff-filter=ACMR | grep -qiE "$PATTERNS"; then
+    echo "❌ Potential secret detected in staged changes!"
+    echo ""
+    echo "Matches found:"
+    git diff --cached --diff-filter=ACMR | grep -iE "$PATTERNS" | head -5
+    echo ""
+    echo "If this is a false positive, commit with: git commit --no-verify"
+    exit 1
+fi
+
+echo "✅ No secrets detected. Proceeding with commit."
+exit 0

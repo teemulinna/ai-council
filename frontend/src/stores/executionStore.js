@@ -5,6 +5,7 @@ export const useExecutionStore = create((set, get) => ({
   isExecuting: false,
   currentStage: null, // 1, 2, or 3
   executionId: null,
+  currentQuery: null, // The original question asked
 
   // Node states during execution
   nodeStates: {}, // { nodeId: 'pending' | 'active' | 'streaming' | 'complete' | 'error' }
@@ -31,9 +32,12 @@ export const useExecutionStore = create((set, get) => ({
   endTime: null,
 
   // Actions
-  startExecution: (executionId, totalNodes) => set({
+  setCurrentQuery: (query) => set({ currentQuery: query }),
+
+  startExecution: (executionId, totalNodes, query = null) => set({
     isExecuting: true,
     executionId,
+    currentQuery: query,
     currentStage: 1,
     nodeStates: {},
     responses: {},
@@ -123,9 +127,10 @@ export const useExecutionStore = create((set, get) => ({
       isExecuting: false,
       currentStage: 3, // Final stage
       executionId: conversation.id || null,
+      currentQuery: conversation.query || null,
       nodeStates,
       responses: conversation.responses || {},
-      rankings: {},
+      rankings: conversation.rankings || {}, // Restore rankings from history!
       finalAnswer: conversation.finalAnswer || null,
       streamingContent: {},
       progress: { current: 0, total: 0, stage: 3 },

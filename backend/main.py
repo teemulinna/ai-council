@@ -46,6 +46,21 @@ app = FastAPI(title="AI Council API - Visual Builder")
 
 logger.info(f"🏛️ AI Council API starting on port {PORT}...")
 
+# Security headers middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,

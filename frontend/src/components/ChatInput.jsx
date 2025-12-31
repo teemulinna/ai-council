@@ -61,14 +61,21 @@ export default function ChatInput({ onSubmit, isDisabled, isExecuting, placehold
             type="submit"
             disabled={!query.trim() || isDisabled}
             data-tour="run-button"
+            aria-label={isExecuting ? "Council is running" : "Run council"}
             className="px-6 py-3 bg-accent-primary text-white font-medium rounded-xl
-                       hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-colors flex items-center gap-2 whitespace-nowrap"
+                       hover:bg-accent-secondary disabled:opacity-50 disabled:cursor-not-allowed
+                       transition-all duration-200 flex items-center gap-2 whitespace-nowrap
+                       focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary
+                       active:scale-[0.98]"
           >
             {isExecuting ? (
               <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Running...
+                <span className="flex items-center gap-1" aria-label="Processing">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full pulse-dot" />
+                  <span className="w-1.5 h-1.5 bg-white rounded-full pulse-dot" />
+                  <span className="w-1.5 h-1.5 bg-white rounded-full pulse-dot" />
+                </span>
+                <span className="ml-1">Running...</span>
               </>
             ) : (
               <>

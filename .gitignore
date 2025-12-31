@@ -48,3 +48,8 @@ coordination/orchestration/*
 claude-flow
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
+
+# Local data directories
+logs/
+backups/
+backend/data/

@@ -22,27 +22,38 @@ echo ""
 echo -e "${BLUE}📍 Ports: Frontend=$FRONTEND_PORT, Backend=$BACKEND_PORT${NC}"
 echo ""
 
-# Check if backend/.env file exists
-if [ ! -f backend/.env ]; then
-    echo -e "${YELLOW}⚠️ backend/.env file not found${NC}"
-    echo "Creating default backend/.env..."
-    cat > backend/.env << EOF
-# AI Council Backend Configuration
+# Check if .env file exists (root or backend)
+ENV_FILE=""
+if [ -f ".env" ]; then
+    ENV_FILE=".env"
+elif [ -f "backend/.env" ]; then
+    ENV_FILE="backend/.env"
+fi
+
+if [ -z "$ENV_FILE" ]; then
+    echo -e "${YELLOW}⚠️ .env file not found${NC}"
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo "Created .env from .env.example"
+    else
+        cat > .env << EOF
+# AI Council Configuration
 PORT=$BACKEND_PORT
 HOST=0.0.0.0
 CORS_ORIGINS=http://localhost:$FRONTEND_PORT
 OPENROUTER_API_KEY=your_api_key_here
 EOF
-    echo -e "${RED}❌ Please edit backend/.env and add your OPENROUTER_API_KEY${NC}"
+    fi
+    echo -e "${RED}❌ Please edit .env and add your OPENROUTER_API_KEY${NC}"
     echo "   Get your key at: https://openrouter.ai/keys"
     exit 1
 fi
 
 # Check for OPENROUTER_API_KEY
-source backend/.env
-if [ -z "$OPENROUTER_API_KEY" ] || [ "$OPENROUTER_API_KEY" = "your_api_key_here" ]; then
+source "$ENV_FILE"
+if [ -z "$OPENROUTER_API_KEY" ] || [ "$OPENROUTER_API_KEY" = "your_api_key_here" ] || [ "$OPENROUTER_API_KEY" = "sk-or-v1-your-key-here" ]; then
     echo -e "${RED}❌ Error: OPENROUTER_API_KEY not configured${NC}"
-    echo "Please edit backend/.env and add your OpenRouter API key"
+    echo "Please edit .env and add your OpenRouter API key"
     echo "Get your key at: https://openrouter.ai/keys"
     exit 1
 fi
@@ -121,13 +132,14 @@ PORT=$BACKEND_PORT
 
 # Install Python dependencies if needed
 echo "📦 Checking Python dependencies..."
-if ! command -v uv &> /dev/null; then
-    echo "Installing uv..."
-    pip install uv
+cd backend
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt -q
+    echo -e "${GREEN}✅ Backend dependencies installed${NC}"
+else
+    echo -e "${YELLOW}⚠️ No requirements.txt found${NC}"
 fi
-
-echo "Installing backend dependencies..."
-uv sync
+cd ..
 
 # Install frontend dependencies if needed
 echo "📦 Checking frontend dependencies..."
@@ -143,12 +155,14 @@ fi
 # Start backend
 echo ""
 echo "🚀 Starting backend server on port $PORT..."
+cd backend
 if [ "$REDIS_AVAILABLE" = true ]; then
-    REDIS_URL="redis://localhost:6379" PORT=$PORT uv run uvicorn backend.main:app --host 0.0.0.0 --port $PORT --reload &
+    REDIS_URL="redis://localhost:6379" PORT=$PORT python -m uvicorn main:app --host 0.0.0.0 --port $PORT --reload &
 else
-    PORT=$PORT uv run uvicorn backend.main:app --host 0.0.0.0 --port $PORT --reload &
+    PORT=$PORT python -m uvicorn main:app --host 0.0.0.0 --port $PORT --reload &
 fi
 BACKEND_PID=$!
+cd ..
 
 # Wait for backend to be ready
 echo "Waiting for backend..."

@@ -7,43 +7,66 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Base
-        'bg-primary': '#0D0D0D',
-        'bg-secondary': '#1A1A1A',
-        'bg-tertiary': '#242424',
+        // Base - Modern Professional (Deep Navy)
+        'bg-primary': '#0A1929',
+        'bg-secondary': '#0F2744',
+        'bg-tertiary': '#1A3A5C',
+        'bg-elevated': '#234B73',
 
-        // Accent
-        'accent-primary': '#6366F1',
-        'accent-secondary': '#8B5CF6',
-        'accent-success': '#10B981',
-        'accent-warning': '#F59E0B',
-        'accent-error': '#EF4444',
+        // Accent - Silver & Sky Blue
+        'accent-primary': '#64B5F6',
+        'accent-secondary': '#90CAF9',
+        'accent-silver': '#B0BEC5',
+        'accent-gold': '#FFD54F',
+        'accent-success': '#4DB6AC',
+        'accent-warning': '#FFB74D',
+        'accent-error': '#EF5350',
 
         // Provider colors
         'anthropic': '#D4A574',
         'openai': '#10A37F',
         'google': '#4285F4',
-        'deepseek': '#5B6EE1',
-        'meta': '#0668E1',
+        'deepseek': '#7986CB',
+        'meta': '#42A5F5',
 
-        // Text
-        'text-primary': '#FAFAFA',
-        'text-secondary': '#A1A1A1',
-        'text-muted': '#6B6B6B',
+        // Text - WCAG AA compliant
+        'text-primary': '#ECEFF1',
+        'text-secondary': '#B0BEC5',
+        'text-muted': '#78909C',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        heading: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+      },
+      screens: {
+        'xs': '375px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'glow': 'glow 2s ease-in-out infinite',
+        'spin-slow': 'spin 1.5s linear infinite',
+        'pulse-dot': 'pulse-dot 1.5s ease-in-out infinite',
       },
       keyframes: {
         glow: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(99, 102, 241, 0)' },
-          '50%': { boxShadow: '0 0 20px 4px rgba(99, 102, 241, 0.3)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(100, 181, 246, 0)' },
+          '50%': { boxShadow: '0 0 20px 4px rgba(100, 181, 246, 0.3)' },
         },
+        'pulse-dot': {
+          '0%, 100%': { opacity: '0.3', transform: 'scale(0.8)' },
+          '50%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
       },
     },
   },

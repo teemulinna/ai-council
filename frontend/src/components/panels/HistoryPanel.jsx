@@ -25,8 +25,20 @@ export default function HistoryPanel({ isOpen, onClose, onViewLogs, onReplay }) 
 
   if (!isOpen) return null;
 
-  const formatDate = (timestamp) => {
-    const date = new Date(timestamp);
+  const formatDate = (timestamp, createdAt) => {
+    // Handle both timestamp (number) and created_at (string like "2025-12-30 21:47:59")
+    let date;
+    if (timestamp) {
+      date = new Date(timestamp);
+    } else if (createdAt) {
+      // Parse "YYYY-MM-DD HH:MM:SS" format
+      date = new Date(createdAt.replace(' ', 'T'));
+    } else {
+      return 'Unknown';
+    }
+
+    if (isNaN(date.getTime())) return 'Unknown';
+
     const now = new Date();
     const diff = now - date;
 
@@ -198,7 +210,7 @@ export default function HistoryPanel({ isOpen, onClose, onViewLogs, onReplay }) 
                               {conv.query}
                             </p>
                             <span className="text-[10px] text-text-muted whitespace-nowrap">
-                              {formatDate(conv.timestamp)}
+                              {formatDate(conv.timestamp, conv.created_at)}
                             </span>
                           </div>
 
